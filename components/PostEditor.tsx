@@ -7,7 +7,13 @@ import type { Post } from "@/lib/types";
 const field =
   "w-full rounded-lg border bg-bg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent";
 
-export function PostEditor({ post }: { post: Post }) {
+const HF_STAGE_LABELS: Record<string, string> = {
+  image: "1/3: генерируем кадр (Soul)…",
+  video: "2/3: оживляем в видео (DoP)…",
+  download: "3/3: скачиваем видео…",
+};
+
+export function PostEditor({ post, hfEnabled }: { post: Post; hfEnabled: boolean }) {
   const router = useRouter();
   const [form, setForm] = useState({
     title: post.title,
@@ -24,6 +30,37 @@ export function PostEditor({ post }: { post: Post }) {
   });
   const [state, setState] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [uploading, setUploading] = useState(false);
+  const [hfState, setHfState] = useState<{ running: boolean; label: string; error: string }>({
+    running: false,
+    label: "",
+    error: "",
+  });
+
+  async function generateVideo() {
+    setHfState({ running: true, label: "Запускаем…", error: "" });
+    const res = await fetch(`/api/posts/${post.id}/higgsfield`, { method: "POST" });
+    if (!res.ok) {
+      const data = (await res.json().catch(() => ({}))) as { error?: string };
+      setHfState({ running: false, label: "", error: data.error ?? "Ошибка запуска" });
+      return;
+    }
+    const poll = setInterval(async () => {
+      const r = await fetch(`/api/posts/${post.id}/higgsfield`);
+      if (!r.ok) return;
+      const data = (await r.json()) as { job: { stage: string; error?: string } | null };
+      const stage = data.job?.stage;
+      if (stage === "done") {
+        clearInterval(poll);
+        setHfState({ running: false, label: "", error: "" });
+        router.refresh();
+      } else if (stage === "error") {
+        clearInterval(poll);
+        setHfState({ running: false, label: "", error: data.job?.error ?? "Ошибка генерации" });
+      } else if (stage) {
+        setHfState({ running: true, label: HF_STAGE_LABELS[stage] ?? stage, error: "" });
+      }
+    }, 3000);
+  }
 
   function set<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((f) => ({ ...f, [key]: value }));
@@ -126,6 +163,16 @@ export function PostEditor({ post }: { post: Post }) {
         </label>
         <textarea rows={4} className={field} value={form.higgsfield_prompt} onChange={(e) => set("higgsfield_prompt", e.target.value)} />
         <div className="mt-2 flex flex-wrap items-center gap-3">
+          {hfEnabled && (
+            <button
+              type="button"
+              onClick={generateVideo}
+              disabled={hfState.running}
+              className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
+            >
+              {hfState.running ? `⏳ ${hfState.label}` : "🎬 Сгенерировать видео (Higgsfield)"}
+            </button>
+          )}
           <button
             type="button"
             onClick={() => navigator.clipboard.writeText(form.higgsfield_prompt)}
@@ -143,6 +190,7 @@ export function PostEditor({ post }: { post: Post }) {
             />
           </label>
           {post.media_path && <span className="text-sm text-good">🎞 {post.media_path}</span>}
+          {hfState.error && <span className="text-sm text-crit">{hfState.error}</span>}
         </div>
       </div>
 

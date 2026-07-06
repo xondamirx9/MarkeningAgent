@@ -14,7 +14,7 @@ export function SettingsForm({
   integrations,
 }: {
   initial: Settings;
-  integrations: { telegram: boolean; anthropic: boolean };
+  integrations: { telegram: boolean; anthropic: boolean; higgsfield: boolean };
 }) {
   const router = useRouter();
   const [s, setS] = useState(initial);
@@ -221,8 +221,9 @@ export function SettingsForm({
             <span className="text-xs text-mut">(нужен Business-аккаунт; инструкция в README)</span>
           </li>
           <li className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-warn" />
-            Higgsfield — без публичного API: агент готовит промпт, видео загружается вручную к посту
+            <span className={`h-2 w-2 rounded-full ${integrations.higgsfield ? "bg-good" : "bg-warn"}`} />
+            Higgsfield API (генерация видео) — {integrations.higgsfield ? "настроен: кнопка «Сгенерировать видео» на странице поста" : "не настроен: промпт готовится, видео загружается вручную"}
+            <span className="text-xs text-mut">(HF_CREDENTIALS в .env, ключи — cloud.higgsfield.ai)</span>
           </li>
         </ul>
       </section>

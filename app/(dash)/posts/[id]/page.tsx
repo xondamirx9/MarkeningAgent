@@ -29,7 +29,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="rounded-2xl border bg-card p-5">
-          <PostEditor post={post} />
+          <PostEditor post={post} hfEnabled={!!(process.env.HF_CREDENTIALS || (process.env.HF_API_KEY && process.env.HF_API_SECRET))} />
         </div>
 
         <div className="space-y-4">

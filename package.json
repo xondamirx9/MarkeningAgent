@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",
+    "@higgsfield/client": "^0.2.1",
     "better-sqlite3": "^12.11.1",
     "next": "16.2.10",
     "playwright-core": "^1.61.1",
