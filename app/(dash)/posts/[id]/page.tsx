@@ -55,6 +55,12 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
               Обложка собирается автоматически из бренд-настроек. Загрузите видео из Higgsfield —
               оно станет фоном.
             </p>
+            <a
+              href={`/api/posts/${post.id}/cover`}
+              className="mt-3 inline-block rounded-lg border px-3 py-1.5 text-sm hover:bg-bg"
+            >
+              ⬇️ Скачать обложку PNG
+            </a>
           </div>
 
           {post.status === "published" && (
