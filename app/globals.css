@@ -1,0 +1,71 @@
+@import "tailwindcss";
+
+:root {
+  --bg: #f9f9f7;
+  --card: #fcfcfb;
+  --ink: #0b0b0b;
+  --ink2: #52514e;
+  --mut: #898781;
+  --line: rgba(11, 11, 11, 0.1);
+  --grid: #e1e0d9;
+  --s1: #2a78d6; /* Telegram series */
+  --s2: #1baf7a; /* Instagram series */
+  --good: #006300;
+  --warn: #fab219;
+  --crit: #d03b3b;
+  --accent: #2a78d6;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d0d0d;
+    --card: #1a1a19;
+    --ink: #ffffff;
+    --ink2: #c3c2b7;
+    --mut: #898781;
+    --line: rgba(255, 255, 255, 0.1);
+    --grid: #2c2c2a;
+    --s1: #3987e5;
+    --s2: #199e70;
+    --good: #0ca30c;
+    --warn: #fab219;
+    --crit: #d03b3b;
+    --accent: #3987e5;
+  }
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-card: var(--card);
+  --color-ink: var(--ink);
+  --color-ink2: var(--ink2);
+  --color-mut: var(--mut);
+  --color-line: var(--line);
+  --color-grid: var(--grid);
+  --color-s1: var(--s1);
+  --color-s2: var(--s2);
+  --color-good: var(--good);
+  --color-warn: var(--warn);
+  --color-crit: var(--crit);
+  --color-accent: var(--accent);
+  --font-sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+
+* {
+  border-color: var(--line);
+}
+
+/* Recharts chrome overrides so axes/grid use theme tokens */
+.recharts-cartesian-axis-tick text {
+  fill: var(--mut);
+  font-size: 12px;
+}
+.recharts-cartesian-grid line {
+  stroke: var(--grid);
+}
