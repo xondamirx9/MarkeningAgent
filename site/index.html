@@ -72,10 +72,11 @@
     <p>Агент генерирует контент-план и тексты постов, готовит промпты для Higgsfield,
        собирает брендированные обложки, публикует в Telegram и учится на аналитике.
        Вы модерируете и настраиваете всё визуально.</p>
-    <a class="btn" href="#run">Как запустить</a>
+    <a class="btn" href="https://render.com/deploy?repo=https://github.com/xondamirx9/MarkeningAgent" target="_blank" rel="noreferrer">🚀 Развернуть свою копию (Render)</a>
+    <a class="btn ghost" href="#run" style="margin-left:8px">Запустить локально</a>
     <a class="btn ghost" href="#shots" style="margin-left:8px">Скриншоты</a>
-    <div class="note">Это демо-витрина на GitHub Pages. Сама платформа — серверное приложение
-      (Next.js + SQLite): запускается локально или на VPS за 2 команды.</div>
+    <div class="note">Это демо-витрина на GitHub Pages (только статика). Сама платформа —
+      серверное приложение (Next.js + SQLite): разверните её на Render в пару кликов или запустите локально.</div>
   </div>
 
   <section>
@@ -129,7 +130,13 @@
 
   <section id="run">
     <h2>Как запустить платформу</h2>
-    <p class="sub">Нужен Node.js 20+. База наполнится демо-данными при первом запуске.</p>
+    <p class="sub">
+      <b>Вариант 1 — облако:</b> нажмите
+      <a href="https://render.com/deploy?repo=https://github.com/xondamirx9/MarkeningAgent" target="_blank" rel="noreferrer">«Развернуть на Render»</a>,
+      войдите через GitHub, заполните логин/пароль и токены Telegram — через ~5 минут получите свою ссылку вида
+      <code>markening-agent.onrender.com</code>.
+      <b>Вариант 2 — локально</b> (Node.js 20+, база наполнится демо-данными):
+    </p>
     <pre>git clone https://github.com/xondamirx9/MarkeningAgent.git
 cd MarkeningAgent
 npm install

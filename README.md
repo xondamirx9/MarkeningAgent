@@ -34,6 +34,20 @@ Next.js 16 (App Router) · TypeScript · Tailwind CSS 4 · SQLite (better-sqlite
 Anthropic SDK (опционально). База и загрузки лежат в `data/` (в git не попадают);
 при первом запуске база наполняется демо-данными, чтобы всё можно было посмотреть сразу.
 
+## Деплой в облако (бесплатно, Render)
+
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/xondamirx9/MarkeningAgent)
+
+1. Нажмите кнопку → войдите через GitHub → Render прочитает `render.yaml`.
+2. Заполните переменные: `ADMIN_LOGIN`, `ADMIN_PASSWORD`, `TELEGRAM_BOT_TOKEN`,
+   `TELEGRAM_CHANNEL_ID` (`AUTH_SECRET` сгенерируется сам, `ANTHROPIC_API_KEY` — опционально).
+3. Через ~5 минут получите ссылку вида `https://markening-agent.onrender.com`.
+
+⚠️ Особенности бесплатного тарифа Render: сервис засыпает после 15 минут без трафика
+(первое открытие после сна — ~30–60 сек), а диск эфемерный — база SQLite сбрасывается
+к демо-данным при перезапуске/деплое. Для постоянных данных нужен платный диск Render,
+Railway или VPS (в репозитории есть `Dockerfile`, данные монтируются в `/app/data`).
+
 ## Запуск локально
 
 ```bash
