@@ -5,7 +5,7 @@ import { isAuthed } from "@/lib/auth";
 import { getPost, updatePost } from "@/lib/db";
 
 const UPLOAD_DIR = path.join(process.cwd(), "data", "uploads");
-const ALLOWED = new Set([".mp4", ".webm", ".jpg", ".jpeg", ".png"]);
+const ALLOWED = new Set([".mp4", ".mov", ".webm", ".jpg", ".jpeg", ".png"]);
 const MAX_BYTES = 200 * 1024 * 1024;
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {

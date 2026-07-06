@@ -3,7 +3,8 @@ services:
     name: markening-agent
     runtime: node
     plan: free
-    buildCommand: npm ci && npm run build
+    # Chromium нужен для авто-обложек в Telegram; если не установится — посты уйдут текстом
+    buildCommand: npm ci && (npx playwright-core install chromium || true) && npm run build
     startCommand: npm start
     envVars:
       - key: NODE_VERSION
