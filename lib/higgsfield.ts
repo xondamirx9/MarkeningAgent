@@ -3,7 +3,7 @@ import path from "node:path";
 import { getPost, updatePost } from "./db";
 import type { CoverFormat } from "./types";
 
-export type HfStage = "image" | "video" | "download" | "done" | "error";
+export type HfStage = "image" | "download" | "done" | "error";
 
 export interface HfJob {
   stage: HfStage;
@@ -49,7 +49,7 @@ async function runPipeline(postId: number): Promise<void> {
     maxPollTime: 10 * 60 * 1000,
   });
 
-  // 1) Soul: cinematic keyframe from the brand prompt
+  // 1) Soul: cinematic photo from the brand prompt
   jobs.set(postId, { stage: "image", startedAt: Date.now() });
   const imageSet = await client.generate(
     "/v1/text2image/soul",
@@ -62,36 +62,29 @@ async function runPipeline(postId: number): Promise<void> {
     { withPolling: true }
   );
   if (!imageSet.isCompleted) {
-    throw new Error(imageSet.isNsfw ? "Модерация Higgsfield отклонила промпт (NSFW)" : "Генерация изображения не удалась");
+    throw new Error(imageSet.isNsfw ? "Модерация Higgsfield отклонила промпт (NSFW)" : "Генерация фото не удалась");
   }
   const imageUrl = imageSet.jobs[0]?.results?.raw?.url;
   if (!imageUrl) throw new Error("Higgsfield не вернул URL изображения");
 
-  // 2) DoP: animate the keyframe into a video
-  jobs.set(postId, { stage: "video", startedAt: Date.now() });
-  const videoSet = await client.generate(
-    "/v1/image2video/dop",
-    {
-      model: "dop-turbo",
-      prompt: post.higgsfield_prompt,
-      input_images: [{ type: "image_url", image_url: imageUrl }],
-    },
-    { withPolling: true }
-  );
-  if (!videoSet.isCompleted) {
-    throw new Error(videoSet.isNsfw ? "Модерация Higgsfield отклонила видео (NSFW)" : "Генерация видео не удалась");
-  }
-  const videoUrl = videoSet.jobs[0]?.results?.raw?.url;
-  if (!videoUrl) throw new Error("Higgsfield не вернул URL видео");
-
-  // 3) download the result into the post's media slot
+  // 2) download and re-encode to JPEG (Soul может отдавать webp,
+  // а Telegram sendPhoto и наш пайплайн ждут jpg/png)
   jobs.set(postId, { stage: "download", startedAt: Date.now() });
-  const res = await fetch(videoUrl);
-  if (!res.ok) throw new Error(`Не удалось скачать видео (${res.status})`);
-  const buf = Buffer.from(await res.arrayBuffer());
+  const res = await fetch(imageUrl);
+  if (!res.ok) throw new Error(`Не удалось скачать фото (${res.status})`);
+  let buf: Buffer = Buffer.from(await res.arrayBuffer());
+  try {
+    const { createCanvas, loadImage } = await import("@napi-rs/canvas");
+    const img = await loadImage(buf);
+    const canvas = createCanvas(img.width, img.height);
+    canvas.getContext("2d").drawImage(img, 0, 0);
+    buf = Buffer.from(canvas.toBuffer("image/jpeg", 92));
+  } catch {
+    /* не смогли перекодировать — сохраняем как есть */
+  }
   const dir = path.join(process.cwd(), "data", "uploads");
   fs.mkdirSync(dir, { recursive: true });
-  const name = `post-${postId}-hf-${Date.now()}.mp4`;
+  const name = `post-${postId}-hf-${Date.now()}.jpg`;
   fs.writeFileSync(path.join(dir, name), buf);
 
   const old = getPost(postId)?.media_path;

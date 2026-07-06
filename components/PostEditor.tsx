@@ -8,9 +8,8 @@ const field =
   "w-full rounded-lg border bg-bg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-accent";
 
 const HF_STAGE_LABELS: Record<string, string> = {
-  image: "1/3: генерируем кадр (Soul)…",
-  video: "2/3: оживляем в видео (DoP)…",
-  download: "3/3: скачиваем видео…",
+  image: "1/2: генерируем фото…",
+  download: "2/2: сохраняем…",
 };
 
 export function PostEditor({ post, hfEnabled }: { post: Post; hfEnabled: boolean }) {
@@ -170,7 +169,7 @@ export function PostEditor({ post, hfEnabled }: { post: Post; hfEnabled: boolean
               disabled={hfState.running}
               className="rounded-lg bg-accent px-3 py-1.5 text-sm font-medium text-white hover:opacity-90 disabled:opacity-60"
             >
-              {hfState.running ? `⏳ ${hfState.label}` : "🎬 Сгенерировать видео (Higgsfield)"}
+              {hfState.running ? `⏳ ${hfState.label}` : "🖼 Сгенерировать фото (Higgsfield)"}
             </button>
           )}
           <button

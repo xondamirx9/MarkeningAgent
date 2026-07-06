@@ -222,7 +222,7 @@ export function SettingsForm({
           </li>
           <li className="flex items-center gap-2">
             <span className={`h-2 w-2 rounded-full ${integrations.higgsfield ? "bg-good" : "bg-warn"}`} />
-            Higgsfield API (генерация видео) — {integrations.higgsfield ? "настроен: кнопка «Сгенерировать видео» на странице поста" : "не настроен: промпт готовится, видео загружается вручную"}
+            Higgsfield API (генерация фото) — {integrations.higgsfield ? "настроен: кнопка «Сгенерировать фото» на странице поста" : "не настроен: промпт готовится, медиа загружается вручную"}
             <span className="text-xs text-mut">(HF_CREDENTIALS в .env, ключи — cloud.higgsfield.ai)</span>
           </li>
         </ul>
