@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { chromium } from "playwright-core";
+import { createCanvas, GlobalFonts, loadImage, type SKRSContext2D } from "@napi-rs/canvas";
 import type { CoverFormat } from "./types";
 
 export const COVER_DIMS: Record<CoverFormat, [number, number]> = {
@@ -9,15 +9,83 @@ export const COVER_DIMS: Record<CoverFormat, [number, number]> = {
   tg_post: [1280, 720],
 };
 
-// Same deterministic backdrop as components/Cover.tsx
-function backdrop(destination: string): string {
-  let h = 0;
-  for (const ch of destination) h = (h * 31 + ch.charCodeAt(0)) % 360;
-  return `linear-gradient(160deg, hsl(${h}, 42%, 22%) 0%, hsl(${(h + 40) % 360}, 48%, 38%) 55%, hsl(${(h + 80) % 360}, 40%, 30%) 100%)`;
+// DejaVu покрывает кириллицу и глиф ✈; шрифты идут с npm-пакетом,
+// поэтому рендер работает на любом хостинге без браузера и системных шрифтов
+const FONT_DIR = path.join(process.cwd(), "node_modules", "dejavu-fonts-ttf", "ttf");
+let fontsReady = false;
+function ensureFonts() {
+  if (fontsReady) return;
+  GlobalFonts.registerFromPath(path.join(FONT_DIR, "DejaVuSans.ttf"), "Cover");
+  GlobalFonts.registerFromPath(path.join(FONT_DIR, "DejaVuSans-Bold.ttf"), "Cover");
+  fontsReady = true;
 }
 
-const esc = (s: string) =>
-  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+// Same deterministic backdrop as components/Cover.tsx
+function backdropColors(destination: string): [string, string, string] {
+  let h = 0;
+  for (const ch of destination) h = (h * 31 + ch.charCodeAt(0)) % 360;
+  return [
+    `hsl(${h}, 42%, 22%)`,
+    `hsl(${(h + 40) % 360}, 48%, 38%)`,
+    `hsl(${(h + 80) % 360}, 40%, 30%)`,
+  ];
+}
+
+function roundedRect(ctx: SKRSContext2D, x: number, y: number, w: number, h: number, r: number) {
+  const rr = Math.min(r, h / 2, w / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + rr, y);
+  ctx.arcTo(x + w, y, x + w, y + h, rr);
+  ctx.arcTo(x + w, y + h, x, y + h, rr);
+  ctx.arcTo(x, y + h, x, y, rr);
+  ctx.arcTo(x, y, x + w, y, rr);
+  ctx.closePath();
+}
+
+function drawPill(
+  ctx: SKRSContext2D,
+  opts: { text: string; font: string; x?: number; right?: number; y: number; padX: number; padY: number; bg: string; color: string }
+): { width: number; height: number } {
+  ctx.font = opts.font;
+  const m = ctx.measureText(opts.text);
+  const textH = m.actualBoundingBoxAscent + m.actualBoundingBoxDescent;
+  const w = m.width + opts.padX * 2;
+  const h = textH + opts.padY * 2;
+  const x = opts.right !== undefined ? opts.right - w : (opts.x ?? 0);
+  ctx.fillStyle = opts.bg;
+  roundedRect(ctx, x, opts.y, w, h, h / 2);
+  ctx.fill();
+  ctx.fillStyle = opts.color;
+  ctx.fillText(opts.text, x + opts.padX, opts.y + opts.padY + m.actualBoundingBoxAscent);
+  return { width: w, height: h };
+}
+
+// DejaVu не содержит цветных эмодзи — убираем их из текста обложки,
+// чтобы вместо 🔥/🌍 не рисовались пустые квадраты (✈ U+2708 в шрифте есть)
+function stripEmoji(s: string): string {
+  return s
+    .replace(/[\u{1F000}-\u{1FFFF}\u{FE0F}\u{200D}\u{2B00}-\u{2BFF}]/gu, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
+function wrapLines(ctx: SKRSContext2D, text: string, font: string, maxWidth: number): string[] {
+  ctx.font = font;
+  const words = text.split(/\s+/).filter(Boolean);
+  const lines: string[] = [];
+  let line = "";
+  for (const word of words) {
+    const probe = line ? `${line} ${word}` : word;
+    if (ctx.measureText(probe).width > maxWidth && line) {
+      lines.push(line);
+      line = word;
+    } else {
+      line = probe;
+    }
+  }
+  if (line) lines.push(line);
+  return lines;
+}
 
 export interface CoverVars {
   format: CoverFormat;
@@ -32,61 +100,120 @@ export interface CoverVars {
   mediaFile?: string | null;
 }
 
-export function coverHtml(v: CoverVars): string {
+export async function renderCoverPng(raw: CoverVars): Promise<Buffer> {
+  ensureFonts();
+  const v: CoverVars = {
+    ...raw,
+    title: stripEmoji(raw.title),
+    destination: stripEmoji(raw.destination),
+    badge: stripEmoji(raw.badge),
+    brandName: stripEmoji(raw.brandName),
+    price: stripEmoji(raw.price),
+  };
   const [w, h] = COVER_DIMS[v.format];
-  let mediaTag = "";
+  const canvas = createCanvas(w, h);
+  const ctx = canvas.getContext("2d");
+
+  // background: photo or deterministic gradient
+  let photoDrawn = false;
   if (v.mediaFile && fs.existsSync(v.mediaFile) && /\.(jpe?g|png)$/i.test(v.mediaFile)) {
-    const mime = path.extname(v.mediaFile).toLowerCase() === ".png" ? "image/png" : "image/jpeg";
-    const data = fs.readFileSync(v.mediaFile).toString("base64");
-    mediaTag = `<img src="data:${mime};base64,${data}" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover">`;
+    try {
+      const img = await loadImage(v.mediaFile);
+      const scale = Math.max(w / img.width, h / img.height); // cover-fit
+      const dw = img.width * scale;
+      const dh = img.height * scale;
+      ctx.drawImage(img, (w - dw) / 2, (h - dh) / 2, dw, dh);
+      photoDrawn = true;
+    } catch {
+      /* fall back to gradient */
+    }
   }
-  return `<!doctype html><html><head><meta charset="utf-8"><style>
-    * { margin: 0; box-sizing: border-box; }
-    body { width: ${w}px; height: ${h}px; overflow: hidden; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
-  </style></head><body>
-  <div style="position:relative;width:${w}px;height:${h}px;background:${backdrop(v.destination)};overflow:hidden">
-    ${mediaTag}
-    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.35) 0%,rgba(0,0,0,0) 35%,rgba(0,0,0,.55) 100%)"></div>
-    <div style="position:absolute;top:${h * 0.045}px;left:${w * 0.06}px;background:${esc(v.primary)};color:#fff;padding:14px 30px;border-radius:999px;font-size:34px;font-weight:700;letter-spacing:.5px">✈️ ${esc(v.brandName)}</div>
-    ${v.badge ? `<div style="position:absolute;top:${h * 0.045}px;right:${w * 0.06}px;background:${esc(v.accent)};color:#111;padding:14px 30px;border-radius:999px;font-size:34px;font-weight:800;text-transform:uppercase">${esc(v.badge)}</div>` : ""}
-    <div style="position:absolute;left:${w * 0.06}px;right:${w * 0.06}px;bottom:${h * 0.05}px">
-      <div style="color:#fff;opacity:.85;font-size:40px;font-weight:600;margin-bottom:12px">${esc(v.destination)}</div>
-      <div style="color:#fff;font-size:${v.format === "tg_post" ? 64 : 76}px;font-weight:800;line-height:1.12;text-shadow:0 4px 24px rgba(0,0,0,.45)">${esc(v.title)}</div>
-      ${v.price ? `<div style="display:inline-block;margin-top:28px;background:#fff;color:#111;padding:16px 36px;border-radius:16px;font-size:52px;font-weight:800">${esc(v.price)}</div>` : ""}
-    </div>
-  </div></body></html>`;
-}
+  if (!photoDrawn) {
+    const [c1, c2, c3] = backdropColors(v.destination);
+    const grad = ctx.createLinearGradient(0, 0, w * 0.35, h);
+    grad.addColorStop(0, c1);
+    grad.addColorStop(0.55, c2);
+    grad.addColorStop(1, c3);
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, w, h);
+  }
 
-/**
- * Screenshots the cover HTML at native resolution. Chromium is resolved from
- * CHROMIUM_PATH, then the Playwright browsers registry (PLAYWRIGHT_BROWSERS_PATH);
- * locally run `npx playwright-core install chromium` or point CHROMIUM_PATH
- * at any installed Chrome/Chromium binary.
- */
-function findChromium(): string | undefined {
-  const candidates = [
-    process.env.CHROMIUM_PATH,
-    process.env.PLAYWRIGHT_BROWSERS_PATH &&
-      path.join(process.env.PLAYWRIGHT_BROWSERS_PATH, "chromium"),
-    "/usr/bin/chromium",
-    "/usr/bin/chromium-browser",
-    "/usr/bin/google-chrome",
-  ].filter((c): c is string => !!c);
-  for (const c of candidates) if (fs.existsSync(c)) return c;
-  return undefined; // fall back to the Playwright registry
-}
+  // scrim so text stays readable
+  const scrim = ctx.createLinearGradient(0, 0, 0, h);
+  scrim.addColorStop(0, "rgba(0,0,0,0.35)");
+  scrim.addColorStop(0.35, "rgba(0,0,0,0)");
+  scrim.addColorStop(1, "rgba(0,0,0,0.55)");
+  ctx.fillStyle = scrim;
+  ctx.fillRect(0, 0, w, h);
 
-export async function renderCoverPng(v: CoverVars): Promise<Buffer> {
-  const [w, h] = COVER_DIMS[v.format];
-  const browser = await chromium.launch({
-    executablePath: findChromium(),
-    args: ["--no-sandbox", "--disable-dev-shm-usage"],
+  const margin = w * 0.06;
+  const topY = h * 0.045;
+
+  // brand pill (top-left) + badge (top-right)
+  drawPill(ctx, {
+    text: `✈ ${v.brandName}`,
+    font: "bold 34px Cover",
+    x: margin,
+    y: topY,
+    padX: 30,
+    padY: 16,
+    bg: v.primary,
+    color: "#ffffff",
   });
-  try {
-    const page = await browser.newPage({ viewport: { width: w, height: h } });
-    await page.setContent(coverHtml(v), { waitUntil: "networkidle" });
-    return await page.screenshot({ type: "png" });
-  } finally {
-    await browser.close();
+  if (v.badge) {
+    drawPill(ctx, {
+      text: v.badge.toUpperCase(),
+      font: "bold 34px Cover",
+      right: w - margin,
+      y: topY,
+      padX: 30,
+      padY: 16,
+      bg: v.accent,
+      color: "#111111",
+    });
   }
+
+  // bottom block: destination → title → price (stacked from the bottom up)
+  const titleSize = v.format === "tg_post" ? 64 : 76;
+  const titleFont = `bold ${titleSize}px Cover`;
+  const lines = wrapLines(ctx, v.title, titleFont, w - margin * 2);
+  const lineH = titleSize * 1.12;
+
+  let cursor = h - h * 0.05; // нижняя граница контента
+  if (v.price) {
+    ctx.font = "bold 52px Cover";
+    const pm = ctx.measureText(v.price);
+    const pillH = pm.actualBoundingBoxAscent + pm.actualBoundingBoxDescent + 32;
+    cursor -= pillH;
+    drawPill(ctx, {
+      text: v.price,
+      font: "bold 52px Cover",
+      x: margin,
+      y: cursor,
+      padX: 36,
+      padY: 16,
+      bg: "#ffffff",
+      color: "#111111",
+    });
+    cursor -= 28;
+  }
+
+  cursor -= lines.length * lineH;
+  ctx.font = titleFont;
+  ctx.fillStyle = "#ffffff";
+  ctx.shadowColor = "rgba(0,0,0,0.45)";
+  ctx.shadowBlur = 24;
+  ctx.shadowOffsetY = 4;
+  lines.forEach((line, i) => {
+    ctx.fillText(line, margin, cursor + (i + 0.85) * lineH);
+  });
+  ctx.shadowColor = "transparent";
+  ctx.shadowBlur = 0;
+  ctx.shadowOffsetY = 0;
+
+  ctx.font = "bold 40px Cover";
+  ctx.fillStyle = "rgba(255,255,255,0.85)";
+  ctx.fillText(v.destination, margin, cursor - 18);
+
+  return canvas.toBuffer("image/png");
 }

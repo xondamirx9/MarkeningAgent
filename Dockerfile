@@ -14,6 +14,8 @@ ENV NODE_ENV=production
 COPY --from=build /app/.next/standalone ./
 COPY --from=build /app/.next/static ./.next/static
 COPY --from=build /app/public ./public
+# шрифты для рендера обложек (referenced by path, not traced by Next)
+COPY --from=build /app/node_modules/dejavu-fonts-ttf/ttf ./node_modules/dejavu-fonts-ttf/ttf
 RUN mkdir -p /app/data
 VOLUME /app/data
 EXPOSE 3000

@@ -11,9 +11,10 @@
   "dependencies": {
     "@anthropic-ai/sdk": "^0.110.0",
     "@higgsfield/client": "^0.2.1",
+    "@napi-rs/canvas": "^1.0.2",
     "better-sqlite3": "^12.11.1",
+    "dejavu-fonts-ttf": "^2.37.3",
     "next": "16.2.10",
-    "playwright-core": "^1.61.1",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "recharts": "^3.9.2"

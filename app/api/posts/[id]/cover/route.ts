@@ -33,9 +33,6 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
     });
   } catch (err) {
     console.error("[cover] render failed:", err);
-    return NextResponse.json(
-      { error: "Не удалось отрендерить обложку. Установите Chromium: npx playwright-core install chromium — или задайте CHROMIUM_PATH в .env" },
-      { status: 501 }
-    );
+    return NextResponse.json({ error: "Не удалось отрендерить обложку" }, { status: 500 });
   }
 }
