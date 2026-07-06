@@ -36,44 +36,52 @@ async function runPipeline(postId: number): Promise<void> {
   if (!post) throw new Error("Пост не найден");
   if (!post.higgsfield_prompt.trim()) throw new Error("У поста пустой промпт Higgsfield");
 
-  const { createHiggsfieldClient } = await import("@higgsfield/client/v2");
-  const client = createHiggsfieldClient({
-    credentials:
-      process.env.HF_CREDENTIALS || `${process.env.HF_API_KEY}:${process.env.HF_API_SECRET}`,
+  // Эндпоинты /v1/* принимают тело вида {params: {...}} — это интерфейс
+  // v1-клиента SDK (v2 subscribe шлёт поля без обёртки и ловит
+  // "body.params: Field required")
+  const { HiggsfieldClient } = await import("@higgsfield/client");
+  const [keyId, keySecret] = (
+    process.env.HF_CREDENTIALS || `${process.env.HF_API_KEY}:${process.env.HF_API_SECRET}`
+  ).split(":");
+  const client = new HiggsfieldClient({
+    apiKey: keyId,
+    apiSecret: keySecret,
     maxPollTime: 10 * 60 * 1000,
   });
 
   // 1) Soul: cinematic keyframe from the brand prompt
   jobs.set(postId, { stage: "image", startedAt: Date.now() });
-  const imageSet = await client.subscribe("/v1/text2image/soul", {
-    input: {
+  const imageSet = await client.generate(
+    "/v1/text2image/soul",
+    {
       prompt: post.higgsfield_prompt,
       width_and_height: SIZE_FOR_FORMAT[post.cover_format] ?? "1152x2048",
       quality: "1080p",
       batch_size: 1,
     },
-    withPolling: true,
-  });
-  if (imageSet.status !== "completed") {
-    throw new Error(imageSet.status === "nsfw" ? "Модерация Higgsfield отклонила промпт (NSFW)" : `Генерация изображения не удалась (${imageSet.status})`);
+    { withPolling: true }
+  );
+  if (!imageSet.isCompleted) {
+    throw new Error(imageSet.isNsfw ? "Модерация Higgsfield отклонила промпт (NSFW)" : "Генерация изображения не удалась");
   }
-  const imageUrl = imageSet.images?.[0]?.url;
+  const imageUrl = imageSet.jobs[0]?.results?.raw?.url;
   if (!imageUrl) throw new Error("Higgsfield не вернул URL изображения");
 
   // 2) DoP: animate the keyframe into a video
   jobs.set(postId, { stage: "video", startedAt: Date.now() });
-  const videoSet = await client.subscribe("/v1/image2video/dop", {
-    input: {
+  const videoSet = await client.generate(
+    "/v1/image2video/dop",
+    {
       model: "dop-turbo",
       prompt: post.higgsfield_prompt,
       input_images: [{ type: "image_url", image_url: imageUrl }],
     },
-    withPolling: true,
-  });
-  if (videoSet.status !== "completed") {
-    throw new Error(videoSet.status === "nsfw" ? "Модерация Higgsfield отклонила видео (NSFW)" : `Генерация видео не удалась (${videoSet.status})`);
+    { withPolling: true }
+  );
+  if (!videoSet.isCompleted) {
+    throw new Error(videoSet.isNsfw ? "Модерация Higgsfield отклонила видео (NSFW)" : "Генерация видео не удалась");
   }
-  const videoUrl = videoSet.video?.url;
+  const videoUrl = videoSet.jobs[0]?.results?.raw?.url;
   if (!videoUrl) throw new Error("Higgsfield не вернул URL видео");
 
   // 3) download the result into the post's media slot
