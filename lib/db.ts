@@ -79,7 +79,7 @@ export const db: Database.Database = g.__db ?? (g.__db = open());
 
 export const DEFAULT_SETTINGS: Settings = {
   business: {
-    name: "Sayyoh Travel",
+    name: "Oscar Travel",
     city: "Ташкент",
     country: "Узбекистан",
     avgCheck: "800 $",

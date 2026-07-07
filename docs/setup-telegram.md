@@ -5,7 +5,7 @@
 ## Шаг 1. Создайте бота
 
 1. Откройте [@BotFather](https://t.me/BotFather) → `/newbot`.
-2. Задайте имя (например, «Sayyoh Publisher») и username (например, `sayyoh_publisher_bot`).
+2. Задайте имя (например, «Oscar Publisher») и username (например, `oscar_publisher_bot`).
 3. BotFather вернёт токен вида `1234567890:AAE…` → это `TELEGRAM_BOT_TOKEN`.
 
 ## Шаг 2. Дайте боту права в канале
