@@ -104,7 +104,19 @@ export async function publishPost(id: number): Promise<PublishResult> {
         const file = path.join(process.cwd(), "data", "uploads", path.basename(post.media_path));
         const m = mediaMethodFor(file);
         if (m && fs.existsSync(file)) {
-          attach = { ...m, blob: new Blob([fs.readFileSync(file)]), name: path.basename(file) };
+          let data: Buffer = fs.readFileSync(file);
+          if (m.method === "sendPhoto" && data.length > 10 * 1024 * 1024) {
+            // страховка для файлов, загруженных до автосжатия
+            const { normalizePhoto } = await import("./media");
+            data = await normalizePhoto(data);
+          }
+          if (m.method !== "sendPhoto" && data.length > 50 * 1024 * 1024) {
+            return {
+              ok: false, telegram: "error", media: "uploaded", instagram: "skipped",
+              error: "Видео больше 50 МБ — Telegram не примет. Сожмите ролик и загрузите заново.",
+            };
+          }
+          attach = { ...m, blob: new Blob([new Uint8Array(data)]), name: path.basename(file) };
           media = "uploaded";
         }
       }

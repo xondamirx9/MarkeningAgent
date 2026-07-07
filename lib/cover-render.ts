@@ -136,6 +136,20 @@ export async function renderCoverPng(raw: CoverVars): Promise<Buffer> {
     grad.addColorStop(1, c3);
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
+
+    // мягкое «солнце» и виньетка, чтобы фон не выглядел плоским
+    const sun = ctx.createRadialGradient(w * 0.78, h * 0.24, 0, w * 0.78, h * 0.24, w * 0.75);
+    sun.addColorStop(0, "rgba(255, 214, 140, 0.35)");
+    sun.addColorStop(0.5, "rgba(255, 180, 100, 0.12)");
+    sun.addColorStop(1, "rgba(0,0,0,0)");
+    ctx.fillStyle = sun;
+    ctx.fillRect(0, 0, w, h);
+
+    const vignette = ctx.createRadialGradient(w / 2, h / 2, Math.min(w, h) * 0.45, w / 2, h / 2, Math.max(w, h) * 0.75);
+    vignette.addColorStop(0, "rgba(0,0,0,0)");
+    vignette.addColorStop(1, "rgba(0,0,0,0.35)");
+    ctx.fillStyle = vignette;
+    ctx.fillRect(0, 0, w, h);
   }
 
   // scrim so text stays readable
