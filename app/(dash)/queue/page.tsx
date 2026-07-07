@@ -65,7 +65,7 @@ export default async function QueuePage({
               <Link href={`/posts/${p.id}`} className="shrink-0">
                 <Cover
                   format={p.cover_format}
-                  title={p.title}
+                  title={p.cover_title || p.title}
                   destination={p.destination}
                   price={p.price}
                   badge={p.badge}

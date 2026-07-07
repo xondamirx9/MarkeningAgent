@@ -39,7 +39,7 @@ export function PostActions({ id, status }: { id: number; status: string }) {
           {busy === "reject" ? "…" : "✕ Отклонить"}
         </button>
       )}
-      {(status === "scheduled" || status === "approved") && (
+      {status !== "published" && (
         <button className={btn} disabled={!!busy} onClick={() => act("publish")}>
           {busy === "publish" ? "Публикуем…" : "🚀 Опубликовать сейчас"}
         </button>

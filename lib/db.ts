@@ -63,6 +63,11 @@ function open(): Database.Database {
       weaknesses TEXT NOT NULL DEFAULT ''
     );
   `);
+  // миграция: короткий заголовок обложки, отдельный от хука поста
+  const cols = db.prepare("PRAGMA table_info(posts)").all() as { name: string }[];
+  if (!cols.some((c) => c.name === "cover_title")) {
+    db.exec("ALTER TABLE posts ADD COLUMN cover_title TEXT NOT NULL DEFAULT ''");
+  }
   const count = (db.prepare("SELECT COUNT(*) AS n FROM posts").get() as { n: number }).n;
   if (count === 0) seed(db);
   return db;
@@ -139,7 +144,7 @@ export function getPost(id: number): Post | undefined {
 }
 
 const POST_FIELDS = [
-  "status", "channel", "rubric", "title", "destination", "price", "badge",
+  "status", "channel", "rubric", "title", "cover_title", "destination", "price", "badge",
   "body_tg", "body_ig", "hashtags", "higgsfield_prompt", "cover_format",
   "media_path", "scheduled_at", "published_at",
 ] as const;
@@ -155,12 +160,12 @@ export function insertPost(p: Omit<Post, "id" | "created_at" | "updated_at" | "v
   const now = new Date().toISOString();
   const res = db
     .prepare(
-      `INSERT INTO posts (status, channel, rubric, title, destination, price, badge, body_tg, body_ig,
+      `INSERT INTO posts (status, channel, rubric, title, cover_title, destination, price, badge, body_tg, body_ig,
         hashtags, higgsfield_prompt, cover_format, media_path, scheduled_at, published_at, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
     )
     .run(
-      p.status, p.channel, p.rubric, p.title, p.destination, p.price, p.badge,
+      p.status, p.channel, p.rubric, p.title, p.cover_title, p.destination, p.price, p.badge,
       p.body_tg, p.body_ig, p.hashtags, p.higgsfield_prompt, p.cover_format,
       p.media_path, p.scheduled_at, p.published_at, now, now
     );

@@ -45,7 +45,7 @@ async function tryRenderCover(post: Post): Promise<Buffer | null> {
     const s = getSettings();
     return await renderCoverPng({
       format: post.cover_format,
-      title: post.title,
+      title: post.cover_title || post.title,
       destination: post.destination,
       price: post.price,
       badge: post.badge,

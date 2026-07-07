@@ -8,6 +8,8 @@ export interface Post {
   channel: Channel;
   rubric: string;
   title: string;
+  /** короткий заголовок для обложки; пустой — берётся title */
+  cover_title: string;
   destination: string;
   price: string;
   badge: string;

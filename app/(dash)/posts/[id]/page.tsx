@@ -40,7 +40,7 @@ export default async function PostPage({ params }: { params: Promise<{ id: strin
             <div className="flex justify-center">
               <Cover
                 format={post.cover_format}
-                title={post.title}
+                title={post.cover_title || post.title}
                 destination={post.destination}
                 price={post.price}
                 badge={post.badge}

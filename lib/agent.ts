@@ -20,6 +20,7 @@ interface Slot {
 
 interface GeneratedTexts {
   title: string;
+  cover_title: string;
   body_tg: string;
   body_ig: string;
   hashtags: string;
@@ -97,7 +98,46 @@ const HOOKS: Record<string, (d: string, p: string) => string> = {
   trend: (d) => `🎥 Тренд недели: ${d} глазами наших туристов`,
 };
 
-function templateTexts(slot: Slot, s: Settings): GeneratedTexts {
+// Короткие заголовки обложек: суть тура в 3-5 словах, варианты ротируются,
+// чтобы даже в одной рубрике обложки не повторялись
+const COVER_TITLES: Record<string, ((d: string, p: string) => string)[]> = {
+  hot: [
+    (d, p) => `${d} ${p} — успей сегодня`,
+    (d) => `Горит: ${d} на этой неделе`,
+    (d, p) => `${d}: минус треть цены, ${p}`,
+  ],
+  guide: [
+    (d) => `Гайд по ${d}: топ-5 мест`,
+    (d) => `${d} за 3 дня — маршрут`,
+    (d) => `Что скрывает ${d}`,
+  ],
+  review: [
+    (d) => `${d} глазами наших туристов`,
+    (d) => `Честный отзыв: ${d}`,
+    (d) => `Как прошёл отпуск в ${d}`,
+  ],
+  backstage: [
+    () => `Тур за 24 часа: как это работает`,
+    () => `Один день из жизни агентства`,
+    () => `Что происходит после вашей заявки`,
+  ],
+  promo: [
+    (d, p) => `${d} ${p} — только до воскресенья`,
+    (d) => `Акция недели: ${d}`,
+    (d, p) => `−скидка на ${d}: ${p}`,
+  ],
+  trend: [
+    (d) => `${d} в тренде этой недели`,
+    (d) => `Все летят в ${d} — вот почему`,
+  ],
+};
+
+function coverTitleFor(slot: Slot, seq: number): string {
+  const variants = COVER_TITLES[slot.rubric.id] ?? [(d: string) => d];
+  return variants[seq % variants.length](slot.destination, slot.price);
+}
+
+function templateTexts(slot: Slot, s: Settings, seq: number): GeneratedTexts {
   const { destination: d, price: p } = slot;
   const title = HOOKS[slot.rubric.id]?.(d, p) ?? `${slot.rubric.emoji} ${slot.rubric.name}: ${d}`;
   const cta = "👉 Напишите нам в личку — подберём тур под ваш бюджет за 24 часа.";
@@ -114,6 +154,7 @@ function templateTexts(slot: Slot, s: Settings): GeneratedTexts {
   const hashtags = `#туры #путешествия #${d.replace(/[-\s]/g, "").toLowerCase()} #${s.business.city.toLowerCase()} #горящиетуры #отпуск`;
   return {
     title,
+    cover_title: coverTitleFor(slot, seq),
     body_tg: `${title}\n\n${bodyCore}\n\n${cta}`,
     body_ig: `${title}\n\n${bodyCore.split("\n\n")[0]}\n\n📲 Подробности в директ`,
     hashtags,
@@ -131,11 +172,12 @@ const TEXT_SCHEMA = {
         type: "object" as const,
         properties: {
           title: { type: "string" as const },
+          cover_title: { type: "string" as const },
           body_tg: { type: "string" as const },
           body_ig: { type: "string" as const },
           hashtags: { type: "string" as const },
         },
-        required: ["title", "body_tg", "body_ig", "hashtags"],
+        required: ["title", "cover_title", "body_tg", "body_ig", "hashtags"],
         additionalProperties: false,
       },
     },
@@ -161,6 +203,7 @@ async function claudeTexts(slots: Slot[], s: Settings): Promise<GeneratedTexts[]
         `Ты — SMM-копирайтер туристического агентства «${s.business.name}» (${s.business.city}, ${s.business.country}). ` +
         `УТП: ${s.business.usp}. Тон бренда: ${s.business.tone}. ` +
         `Для каждого поста напиши: title (цепляющий хук до 70 символов, с эмодзи), ` +
+        `cover_title (заголовок для обложки-картинки: 3-5 слов, БЕЗ эмодзи, суть конкретного тура — направление и оффер; у каждого поста свой, не повторяйся), ` +
         `body_tg (полный пост для Telegram: хук, тело с буллетами и эмодзи, конкретная цена, CTA написать в личку), ` +
         `body_ig (короче, для Instagram: хук + 2-3 предложения + CTA в директ, без хэштегов в теле), ` +
         `hashtags (7-10 хэштегов через пробел, на русском, под нишу travel). ` +
@@ -186,12 +229,13 @@ export async function generateWeekPlan(): Promise<{ created: number; usedClaude:
   const ai = await claudeTexts(slots, s);
   let created = 0;
   slots.forEach((slot, i) => {
-    const texts = ai?.[i] ?? templateTexts(slot, s);
+    const texts = ai?.[i] ?? templateTexts(slot, s, i);
     insertPost({
       status: "draft",
       channel: "both",
       rubric: slot.rubric.id,
       title: texts.title,
+      cover_title: texts.cover_title || coverTitleFor(slot, i),
       destination: slot.destination,
       price: slot.price,
       badge: slot.rubric.id === "hot" ? "Горящий тур" : slot.rubric.id === "promo" ? "Акция" : "",

@@ -28,6 +28,13 @@ const RUBRIC_TITLES: Record<string, (d: string) => string> = {
   backstage: () => `Как мы собираем тур за 24 часа`,
   promo: (d) => `Акция недели: ${d} со скидкой`,
 };
+const COVER_TITLES: Record<string, (d: string, p: string) => string> = {
+  hot: (d, p) => `${d} ${p} — успей сегодня`,
+  guide: (d) => `Гайд по ${d}: топ-5 мест`,
+  review: (d) => `${d} глазами наших туристов`,
+  backstage: () => `Тур за 24 часа: как это работает`,
+  promo: (d, p) => `${d} ${p} — только до воскресенья`,
+};
 
 export function seed(db: Database.Database) {
   const rnd = mulberry32(20260706);
@@ -54,10 +61,10 @@ export function seed(db: Database.Database) {
 
   // --- Posts: published history + scheduled + moderation queue ---
   const insPost = db.prepare(
-    `INSERT INTO posts (status, channel, rubric, title, destination, price, badge, body_tg, body_ig,
+    `INSERT INTO posts (status, channel, rubric, title, cover_title, destination, price, badge, body_tg, body_ig,
       hashtags, higgsfield_prompt, cover_format, media_path, scheduled_at, published_at, created_at, updated_at,
       views, likes, comments, shares)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
 
   const mkBody = (rubric: string, dest: string, price: string) => {
@@ -91,7 +98,7 @@ export function seed(db: Database.Database) {
     const views = Math.round(700 + rnd() * 2600);
     insPost.run(
       "published", rnd() > 0.3 ? "both" : "telegram", rubric,
-      RUBRIC_TITLES[rubric](dest), dest, price,
+      RUBRIC_TITLES[rubric](dest), COVER_TITLES[rubric](dest, price), dest, price,
       rubric === "hot" ? "Горящий тур" : rubric === "promo" ? "Акция" : "",
       tgBody, igBody, hashtags(dest), higgs(rubric, dest),
       rubric === "guide" ? "ig_post" : "reels", null,
@@ -109,7 +116,7 @@ export function seed(db: Database.Database) {
     const [dest, price] = DESTS[(i * 2) % DESTS.length];
     const { tgBody, igBody } = mkBody(rubric, dest, price);
     insPost.run(
-      "scheduled", "both", rubric, RUBRIC_TITLES[rubric](dest), dest, price,
+      "scheduled", "both", rubric, RUBRIC_TITLES[rubric](dest), COVER_TITLES[rubric](dest, price), dest, price,
       rubric === "hot" ? "Горящий тур" : "", tgBody, igBody, hashtags(dest),
       higgs(rubric, dest), "reels", null, d.toISOString(), null,
       now.toISOString(), now.toISOString(), 0, 0, 0, 0
@@ -124,7 +131,7 @@ export function seed(db: Database.Database) {
     const [dest, price] = DESTS[(i * 3 + 1) % DESTS.length];
     const { tgBody, igBody } = mkBody(rubric, dest, price);
     insPost.run(
-      "draft", "both", rubric, RUBRIC_TITLES[rubric](dest), dest, price,
+      "draft", "both", rubric, RUBRIC_TITLES[rubric](dest), COVER_TITLES[rubric](dest, price), dest, price,
       rubric === "hot" ? "Горящий тур" : rubric === "promo" ? "Акция" : "",
       tgBody, igBody, hashtags(dest), higgs(rubric, dest),
       i % 2 === 0 ? "reels" : "ig_post", null, d.toISOString(), null,

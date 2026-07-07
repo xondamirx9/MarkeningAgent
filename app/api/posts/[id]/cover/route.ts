@@ -14,7 +14,7 @@ export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> 
   try {
     const png = await renderCoverPng({
       format: post.cover_format,
-      title: post.title,
+      title: post.cover_title || post.title,
       destination: post.destination,
       price: post.price,
       badge: post.badge,

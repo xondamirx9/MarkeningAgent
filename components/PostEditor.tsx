@@ -16,6 +16,7 @@ export function PostEditor({ post, hfEnabled }: { post: Post; hfEnabled: boolean
   const router = useRouter();
   const [form, setForm] = useState({
     title: post.title,
+    cover_title: post.cover_title,
     destination: post.destination,
     price: post.price,
     badge: post.badge,
@@ -96,6 +97,15 @@ export function PostEditor({ post, hfEnabled }: { post: Post; hfEnabled: boolean
         <div>
           <label className="mb-1 block text-xs text-ink2">Заголовок (хук)</label>
           <input className={field} value={form.title} onChange={(e) => set("title", e.target.value)} />
+        </div>
+        <div>
+          <label className="mb-1 block text-xs text-ink2">Заголовок обложки (коротко, 3–5 слов)</label>
+          <input
+            className={field}
+            value={form.cover_title}
+            onChange={(e) => set("cover_title", e.target.value)}
+            placeholder="Дубай от 620 $ — успей сегодня"
+          />
         </div>
         <div className="grid grid-cols-2 gap-3">
           <div>
