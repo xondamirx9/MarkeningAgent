@@ -1,0 +1,221 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Маркетинговый агент турагентства — демо</title>
+<style>
+  :root {
+    --bg: #f9f9f7; --card: #fcfcfb; --ink: #0b0b0b; --ink2: #52514e; --mut: #898781;
+    --line: rgba(11,11,11,.1); --accent: #2a78d6; --accent2: #eda100; --good: #006300;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0d0d0d; --card: #1a1a19; --ink: #fff; --ink2: #c3c2b7; --mut: #898781;
+      --line: rgba(255,255,255,.1); --accent: #3987e5; --good: #0ca30c;
+    }
+  }
+  * { margin: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--ink); font-family: system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.55; }
+  a { color: var(--accent); }
+  .wrap { max-width: 1080px; margin: 0 auto; padding: 0 20px; }
+  header { border-bottom: 1px solid var(--line); background: var(--card); position: sticky; top: 0; z-index: 5; }
+  header .wrap { display: flex; align-items: center; justify-content: space-between; padding: 14px 20px; }
+  .logo { font-weight: 700; }
+  .btn { display: inline-block; background: var(--accent); color: #fff; padding: 10px 20px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 15px; }
+  .btn.ghost { background: transparent; color: var(--accent); border: 1px solid var(--accent); }
+  .hero { padding: 64px 0 40px; text-align: center; }
+  .hero h1 { font-size: clamp(28px, 5vw, 44px); line-height: 1.15; margin-bottom: 14px; }
+  .hero p { color: var(--ink2); max-width: 640px; margin: 0 auto 24px; font-size: 17px; }
+  .hero .note { display: inline-block; margin-top: 18px; font-size: 13px; color: var(--mut); background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 6px 14px; }
+  section { padding: 40px 0; }
+  h2 { font-size: 26px; margin-bottom: 6px; }
+  .sub { color: var(--ink2); margin-bottom: 24px; }
+  .grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+  .card h3 { font-size: 16px; margin-bottom: 6px; }
+  .card p { font-size: 14px; color: var(--ink2); }
+  .shots { display: grid; gap: 18px; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); }
+  .shots figure { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  .shots img { width: 100%; display: block; cursor: zoom-in; }
+  .shots figcaption { padding: 10px 14px; font-size: 13px; color: var(--ink2); }
+  /* playground */
+  .play { display: grid; gap: 20px; grid-template-columns: 300px 1fr; align-items: start; }
+  @media (max-width: 800px) { .play { grid-template-columns: 1fr; } }
+  .field label { display: block; font-size: 12px; color: var(--ink2); margin: 12px 0 4px; }
+  .field input[type=text] { width: 100%; background: var(--bg); border: 1px solid var(--line); color: var(--ink); border-radius: 10px; padding: 9px 12px; font-size: 14px; }
+  .field input[type=color] { width: 52px; height: 34px; border: 1px solid var(--line); border-radius: 8px; background: var(--bg); padding: 2px; }
+  .colors { display: flex; gap: 18px; }
+  .covers { display: flex; flex-wrap: wrap; gap: 22px; align-items: flex-start; }
+  .cover-box figcaption { font-size: 12px; color: var(--mut); margin-top: 8px; }
+  .cover-outer { border-radius: 14px; overflow: hidden; border: 1px solid var(--line); position: relative; }
+  pre { background: #14141a; color: #e8e8e8; border-radius: 12px; padding: 18px; overflow-x: auto; font-size: 14px; }
+  footer { border-top: 1px solid var(--line); padding: 26px 0 40px; color: var(--mut); font-size: 13px; }
+  #lightbox { position: fixed; inset: 0; background: rgba(0,0,0,.85); display: none; align-items: center; justify-content: center; z-index: 50; cursor: zoom-out; }
+  #lightbox img { max-width: 95vw; max-height: 95vh; border-radius: 8px; }
+  table { border-collapse: collapse; width: 100%; font-size: 14px; }
+  td, th { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--line); }
+  th { color: var(--mut); font-weight: 500; font-size: 12px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap">
+    <span class="logo">✈️ Маркетинг-агент турагентства</span>
+    <a class="btn ghost" href="https://github.com/xondamirx9/MarkeningAgent" target="_blank" rel="noreferrer">GitHub&nbsp;→</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hero">
+    <h1>Автономный маркетинг для турагентства —<br>с платформой управления</h1>
+    <p>Агент генерирует контент-план и тексты постов, готовит промпты для Higgsfield,
+       собирает брендированные обложки, публикует в Telegram и учится на аналитике.
+       Вы модерируете и настраиваете всё визуально.</p>
+    <a class="btn" href="https://render.com/deploy?repo=https://github.com/xondamirx9/MarkeningAgent" target="_blank" rel="noreferrer">🚀 Развернуть свою копию (Render)</a>
+    <a class="btn ghost" href="#run" style="margin-left:8px">Запустить локально</a>
+    <a class="btn ghost" href="#shots" style="margin-left:8px">Скриншоты</a>
+    <div class="note">Это демо-витрина на GitHub Pages (только статика). Сама платформа —
+      серверное приложение (Next.js + SQLite): разверните её на Render в пару кликов или запустите локально.</div>
+  </div>
+
+  <section>
+    <h2>Возможности</h2>
+    <div class="grid">
+      <div class="card"><h3>⚡ Генерация плана на неделю</h3><p>Черновики по рубрикам, ротации направлений и вашему расписанию. Тексты пишет Claude (или встроенные шаблоны без ключа).</p></div>
+      <div class="card"><h3>📝 Модерация</h3><p>Ничего не публикуется без одобрения: правьте тексты TG/IG, дату, обложку; одобряйте или отклоняйте.</p></div>
+      <div class="card"><h3>🎨 Единый визуальный стиль</h3><p>Обложки Reels 1080×1920, IG 1080×1350, TG 1280×720 из бренд-цветов + экспорт в PNG в полном разрешении.</p></div>
+      <div class="card"><h3>🎥 Связка с Higgsfield</h3><p>Агент готовит детальный промпт в стиле бренда; готовое видео загружается к посту и становится фоном обложки.</p></div>
+      <div class="card"><h3>🚀 Публикация в Telegram</h3><p>Bot API: текст и фото, ретраи, обработка лимитов, автопубликация по расписанию через cron.</p></div>
+      <div class="card"><h3>📈 Аналитика и обучение</h3><p>Рост подписчиков, ER, охват, лучшие посты и рубрики; ежедневный сбор подписчиков TG-канала в базу.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Конструктор обложек — попробуйте вживую</h2>
+    <p class="sub">Тот же шаблон, что в платформе: меняйте переменные и бренд-цвета.</p>
+    <div class="play">
+      <div class="card field">
+        <label>Заголовок (хук)</label>
+        <input type="text" id="v-title" value="Горящий тур: вылет уже в субботу">
+        <label>Направление</label>
+        <input type="text" id="v-dest" value="Дубай">
+        <label>Цена</label>
+        <input type="text" id="v-price" value="от 620 $">
+        <label>Бейдж (пусто — скрыть)</label>
+        <input type="text" id="v-badge" value="Горящий тур">
+        <label>Название бренда</label>
+        <input type="text" id="v-brand" value="Oscar Travel">
+        <div class="colors">
+          <div><label>Основной</label><input type="color" id="v-primary" value="#2a78d6"></div>
+          <div><label>Акцент</label><input type="color" id="v-accent" value="#eda100"></div>
+        </div>
+      </div>
+      <div class="covers" id="covers"></div>
+    </div>
+  </section>
+
+  <section id="shots">
+    <h2>Платформа изнутри</h2>
+    <p class="sub">Кликните по скриншоту, чтобы увеличить.</p>
+    <div class="shots">
+      <figure><img src="assets/shot-overview.png" alt="Обзор" loading="lazy"><figcaption>Обзор: подписчики TG/IG, ER, очередь модерации, лучшие посты</figcaption></figure>
+      <figure><img src="assets/shot-queue.png" alt="Модерация" loading="lazy"><figcaption>Модерация: черновики с превью обложек и действиями</figcaption></figure>
+      <figure><img src="assets/shot-post.png" alt="Редактор поста" loading="lazy"><figcaption>Редактор: тексты TG/IG, промпт Higgsfield, загрузка видео, обложка</figcaption></figure>
+      <figure><img src="assets/shot-analytics.png" alt="Аналитика" loading="lazy"><figcaption>Аналитика: рост подписчиков, вовлечённость, охват, рубрики</figcaption></figure>
+      <figure><img src="assets/shot-calendar.png" alt="Календарь" loading="lazy"><figcaption>Контент-календарь со статусами постов</figcaption></figure>
+      <figure><img src="assets/shot-templates.png" alt="Шаблоны" loading="lazy"><figcaption>Визуальные шаблоны трёх форматов с живой подстановкой</figcaption></figure>
+    </div>
+  </section>
+
+  <section id="run">
+    <h2>Как запустить платформу</h2>
+    <p class="sub">
+      <b>Вариант 1 — облако:</b> нажмите
+      <a href="https://render.com/deploy?repo=https://github.com/xondamirx9/MarkeningAgent" target="_blank" rel="noreferrer">«Развернуть на Render»</a>,
+      войдите через GitHub, заполните логин/пароль и токены Telegram — через ~5 минут получите свою ссылку вида
+      <code>markening-agent.onrender.com</code>.
+      <b>Вариант 2 — локально</b> (Node.js 20+, база наполнится демо-данными):
+    </p>
+    <pre>git clone https://github.com/xondamirx9/MarkeningAgent.git
+cd MarkeningAgent
+npm install
+cp .env.example .env   # токены Telegram / ключ Claude — по желанию
+npm run dev            # → http://localhost:3000  (admin / admin123)</pre>
+    <div style="margin-top:18px">
+      <table>
+        <tr><th>Интеграция</th><th>Статус</th></tr>
+        <tr><td>Telegram Bot API (публикация, метрики)</td><td>автоматически — токен в .env (docs/setup-telegram.md)</td></tr>
+        <tr><td>Claude API (тексты постов)</td><td>опционально — без ключа работают шаблоны</td></tr>
+        <tr><td>Instagram Graph API</td><td>полуручной режим — инструкция в docs/setup-instagram.md</td></tr>
+        <tr><td>Higgsfield</td><td>промпт генерируется автоматически, видео загружается вручную</td></tr>
+      </table>
+    </div>
+  </section>
+</div>
+
+<footer><div class="wrap">Oscar Travel · демо-витрина платформы «Маркетинговый агент» · <a href="https://github.com/xondamirx9/MarkeningAgent">исходный код</a></div></footer>
+
+<div id="lightbox"><img alt=""></div>
+
+<script>
+// --- Cover playground (same layout as the platform's Cover template) ---
+const DIMS = { reels: [1080, 1920, "Reels · 1080×1920", 230], ig_post: [1080, 1350, "Instagram · 1080×1350", 230], tg_post: [1280, 720, "Telegram · 1280×720", 380] };
+
+function backdrop(destination) {
+  let h = 0;
+  for (const ch of destination) h = (h * 31 + ch.charCodeAt(0)) % 360;
+  return `linear-gradient(160deg, hsl(${h},42%,22%) 0%, hsl(${(h+40)%360},48%,38%) 55%, hsl(${(h+80)%360},40%,30%) 100%)`;
+}
+
+function esc(s) { const d = document.createElement("div"); d.textContent = s; return d.innerHTML; }
+
+function coverHtml(fmt, v) {
+  const [w, h] = DIMS[fmt];
+  return `<div style="position:relative;width:${w}px;height:${h}px;background:${backdrop(v.dest)};overflow:hidden;font-family:system-ui,sans-serif">
+    <div style="position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.35),rgba(0,0,0,0) 35%,rgba(0,0,0,.55))"></div>
+    <div style="position:absolute;top:${h*.045}px;left:${w*.06}px;background:${v.primary};color:#fff;padding:14px 30px;border-radius:999px;font-size:34px;font-weight:700">✈️ ${esc(v.brand)}</div>
+    ${v.badge ? `<div style="position:absolute;top:${h*.045}px;right:${w*.06}px;background:${v.accent};color:#111;padding:14px 30px;border-radius:999px;font-size:34px;font-weight:800;text-transform:uppercase">${esc(v.badge)}</div>` : ""}
+    <div style="position:absolute;left:${w*.06}px;right:${w*.06}px;bottom:${h*.05}px">
+      <div style="color:#fff;opacity:.85;font-size:40px;font-weight:600;margin-bottom:12px">${esc(v.dest)}</div>
+      <div style="color:#fff;font-size:${fmt==="tg_post"?64:76}px;font-weight:800;line-height:1.12;text-shadow:0 4px 24px rgba(0,0,0,.45)">${esc(v.title)}</div>
+      ${v.price ? `<div style="display:inline-block;margin-top:28px;background:#fff;color:#111;padding:16px 36px;border-radius:16px;font-size:52px;font-weight:800">${esc(v.price)}</div>` : ""}
+    </div></div>`;
+}
+
+function render() {
+  const v = {
+    title: document.getElementById("v-title").value,
+    dest: document.getElementById("v-dest").value || "—",
+    price: document.getElementById("v-price").value,
+    badge: document.getElementById("v-badge").value,
+    brand: document.getElementById("v-brand").value,
+    primary: document.getElementById("v-primary").value,
+    accent: document.getElementById("v-accent").value,
+  };
+  const root = document.getElementById("covers");
+  root.innerHTML = "";
+  for (const fmt of Object.keys(DIMS)) {
+    const [w, h, label, outW] = DIMS[fmt];
+    const scale = outW / w;
+    const fig = document.createElement("figure");
+    fig.className = "cover-box";
+    fig.style.margin = "0";
+    fig.innerHTML = `<div class="cover-outer" style="width:${w*scale}px;height:${h*scale}px">
+        <div style="transform:scale(${scale});transform-origin:top left">${coverHtml(fmt, v)}</div>
+      </div><figcaption>${label}</figcaption>`;
+    root.appendChild(fig);
+  }
+}
+document.querySelectorAll(".field input").forEach((el) => el.addEventListener("input", render));
+render();
+
+// --- lightbox ---
+const lb = document.getElementById("lightbox");
+document.querySelectorAll(".shots img").forEach((img) =>
+  img.addEventListener("click", () => { lb.querySelector("img").src = img.src; lb.style.display = "flex"; })
+);
+lb.addEventListener("click", () => (lb.style.display = "none"));
+</script>
+</body>
+</html>
