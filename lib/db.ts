@@ -1,7 +1,7 @@
 import Database from "better-sqlite3";
 import fs from "node:fs";
 import path from "node:path";
-import type { Post, MetricRow, Competitor, Settings } from "./types";
+import type { Post, MetricRow, Competitor, Settings, Offer } from "./types";
 import { seed } from "./seed";
 
 const DATA_DIR = path.join(process.cwd(), "data");
@@ -46,6 +46,15 @@ function open(): Database.Database {
       reach INTEGER NOT NULL,
       engagement INTEGER NOT NULL,
       PRIMARY KEY (date, channel)
+    );
+    CREATE TABLE IF NOT EXISTS offers (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      destination TEXT NOT NULL,
+      price TEXT NOT NULL DEFAULT '',
+      details TEXT NOT NULL DEFAULT '',
+      hot INTEGER NOT NULL DEFAULT 0,
+      active INTEGER NOT NULL DEFAULT 1,
+      created_at TEXT NOT NULL
     );
     CREATE TABLE IF NOT EXISTS competitors (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -186,4 +195,30 @@ export function getMetrics(days = 90): MetricRow[] {
 
 export function listCompetitors(): Competitor[] {
   return db.prepare("SELECT * FROM competitors ORDER BY tg_subs DESC").all() as Competitor[];
+}
+
+export function listOffers(activeOnly = false): Offer[] {
+  return db
+    .prepare(`SELECT * FROM offers ${activeOnly ? "WHERE active = 1" : ""} ORDER BY hot DESC, id DESC`)
+    .all() as Offer[];
+}
+
+export function insertOffer(o: Pick<Offer, "destination" | "price" | "details" | "hot">): number {
+  const res = db
+    .prepare("INSERT INTO offers (destination, price, details, hot, active, created_at) VALUES (?, ?, ?, ?, 1, ?)")
+    .run(o.destination, o.price, o.details, o.hot ? 1 : 0, new Date().toISOString());
+  return Number(res.lastInsertRowid);
+}
+
+export function updateOffer(id: number, patch: Partial<Offer>) {
+  const keys = (["destination", "price", "details", "hot", "active"] as const).filter((k) => k in patch);
+  if (keys.length === 0) return;
+  db.prepare(`UPDATE offers SET ${keys.map((k) => `${k} = ?`).join(", ")} WHERE id = ?`).run(
+    ...keys.map((k) => (typeof patch[k] === "boolean" ? (patch[k] ? 1 : 0) : patch[k])),
+    id
+  );
+}
+
+export function deleteOffer(id: number) {
+  db.prepare("DELETE FROM offers WHERE id = ?").run(id);
 }

@@ -1,5 +1,5 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { getSettings, insertPost, listPosts } from "./db";
+import { getSettings, insertPost, listPosts, listOffers } from "./db";
 import type { Rubric, Settings } from "./types";
 
 const PRICES: Record<string, string> = {
@@ -16,6 +16,8 @@ interface Slot {
   rubric: Rubric;
   destination: string;
   price: string;
+  /** детали реального тура из каталога (даты, отель, что включено) */
+  details: string;
 }
 
 interface GeneratedTexts {
@@ -54,6 +56,7 @@ function buildSlots(s: Settings): Slot[] {
       rubric: pool[produced % pool.length],
       destination: ordered[produced % ordered.length],
       price: PRICES[ordered[produced % ordered.length]] ?? `${s.business.avgCheck}`,
+      details: "",
     });
     produced++;
   }
@@ -69,9 +72,25 @@ function buildSlots(s: Settings): Slot[] {
       rubric: pool[i % pool.length],
       destination: ordered[i % ordered.length],
       price: PRICES[ordered[i % ordered.length]] ?? `${s.business.avgCheck}`,
+      details: "",
     });
   }
   slots.sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  // Каталог «Туры»: если есть актуальные предложения, план строится из них —
+  // реальные направления, цены и детали вместо выдуманных. Горящие туры
+  // получают рубрику «hot».
+  const offers = listOffers(true);
+  if (offers.length > 0) {
+    const hotRubric = s.rubrics.find((r) => r.id === "hot" && r.enabled);
+    slots.forEach((slot, i) => {
+      const offer = offers[i % offers.length];
+      slot.destination = offer.destination;
+      slot.price = offer.price;
+      slot.details = offer.details;
+      if (offer.hot && hotRubric) slot.rubric = hotRubric;
+    });
+  }
   return slots;
 }
 
@@ -141,16 +160,17 @@ function templateTexts(slot: Slot, s: Settings, seq: number): GeneratedTexts {
   const { destination: d, price: p } = slot;
   const title = HOOKS[slot.rubric.id]?.(d, p) ?? `${slot.rubric.emoji} ${slot.rubric.name}: ${d}`;
   const cta = "👉 Напишите нам в личку — подберём тур под ваш бюджет за 24 часа.";
+  const detailsLine = slot.details ? `\n\n📋 ${slot.details}` : "";
   const bodyCore =
     slot.rubric.id === "hot"
-      ? `✈️ Вылет из ${s.business.city}, в пакете:\n• перелёт туда-обратно\n• отель 4–5★ с завтраками\n• трансфер и страховка\n\n💵 ${p} на человека. Мест мало — горящие туры разбирают за день.`
+      ? `✈️ Вылет из ${s.business.city}, в пакете:\n• перелёт туда-обратно\n• отель 4–5★ с завтраками\n• трансфер и страховка${detailsLine}\n\n💵 ${p} на человека. Мест мало — горящие туры разбирают за день.`
       : slot.rubric.id === "guide"
-        ? `Сохраните пост: когда лететь, сколько закладывать на день, топ-5 мест и где лучшие закаты. Всё проверено нашими туристами.\n\n💵 Туры ${p}.`
+        ? `Сохраните пост: когда лететь, сколько закладывать на день, топ-5 мест и где лучшие закаты. Всё проверено нашими туристами.${detailsLine}\n\n💵 Туры ${p}.`
         : slot.rubric.id === "review"
           ? `Наши туристы вернулись из ${d} и рассказали, как всё прошло на самом деле: отель, пляж, экскурсии и то, о чём не пишут в буклетах.`
           : slot.rubric.id === "backstage"
             ? `Подбор отеля, выкуп билетов, виза, трансфер — показываем, что происходит за кулисами, пока вы собираете чемодан. ${s.business.usp}.`
-            : `Только до воскресенья: ${d} ${p} для первых пяти броней. Дальше цена вернётся к обычной.`;
+            : `Только до воскресенья: ${d} ${p} для первых пяти броней. Дальше цена вернётся к обычной.${detailsLine}`;
   const hashtags = `#туры #путешествия #${d.replace(/[-\s]/g, "").toLowerCase()} #${s.business.city.toLowerCase()} #горящиетуры #отпуск`;
   return {
     title,
@@ -193,7 +213,7 @@ async function claudeTexts(slots: Slot[], s: Settings): Promise<GeneratedTexts[]
     const brief = slots
       .map(
         (sl, i) =>
-          `${i + 1}. Рубрика: ${sl.rubric.name} (${sl.rubric.id}); направление: ${sl.destination}; цена: ${sl.price}; дата: ${sl.date.toLocaleDateString("ru-RU")}`
+          `${i + 1}. Рубрика: ${sl.rubric.name} (${sl.rubric.id}); направление: ${sl.destination}; цена: ${sl.price}; дата: ${sl.date.toLocaleDateString("ru-RU")}${sl.details ? `; детали реального тура (используй их в тексте!): ${sl.details}` : ""}`
       )
       .join("\n");
     const response = await client.messages.create({
@@ -221,16 +241,17 @@ async function claudeTexts(slots: Slot[], s: Settings): Promise<GeneratedTexts[]
   }
 }
 
-export async function generateWeekPlan(): Promise<{ created: number; usedClaude: boolean }> {
+export async function generateWeekPlan(): Promise<{ created: number; usedClaude: boolean; ids: number[] }> {
   const s = getSettings();
   const slots = buildSlots(s);
-  if (slots.length === 0) return { created: 0, usedClaude: false };
+  if (slots.length === 0) return { created: 0, usedClaude: false, ids: [] };
 
   const ai = await claudeTexts(slots, s);
   let created = 0;
+  const ids: number[] = [];
   slots.forEach((slot, i) => {
     const texts = ai?.[i] ?? templateTexts(slot, s, i);
-    insertPost({
+    const id = insertPost({
       status: "draft",
       channel: "both",
       rubric: slot.rubric.id,
@@ -249,6 +270,7 @@ export async function generateWeekPlan(): Promise<{ created: number; usedClaude:
       published_at: null,
     });
     created++;
+    ids.push(id);
   });
-  return { created, usedClaude: ai !== null };
+  return { created, usedClaude: ai !== null, ids };
 }

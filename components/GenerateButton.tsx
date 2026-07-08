@@ -13,9 +13,9 @@ export function GenerateButton() {
     setNote("");
     try {
       const res = await fetch("/api/generate", { method: "POST" });
-      const data = (await res.json()) as { created: number; usedClaude: boolean };
+      const data = (await res.json()) as { created: number; usedClaude: boolean; photos?: boolean };
       setNote(
-        `Создано черновиков: ${data.created}${data.usedClaude ? " (тексты — Claude)" : " (тексты — шаблоны)"}`
+        `Создано черновиков: ${data.created}${data.usedClaude ? " (тексты — Claude)" : " (тексты — шаблоны)"}${data.photos ? ", фото Higgsfield генерируются в фоне" : ""}`
       );
       router.refresh();
       setTimeout(() => router.push("/queue"), 800);

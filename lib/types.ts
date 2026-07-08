@@ -37,6 +37,17 @@ export interface MetricRow {
   engagement: number;
 }
 
+export interface Offer {
+  id: number;
+  destination: string;
+  price: string;
+  /** детали реального тура: даты, отель, что включено */
+  details: string;
+  hot: number; // 1 = горящий
+  active: number; // 1 = участвует в контент-плане
+  created_at: string;
+}
+
 export interface Competitor {
   id: number;
   name: string;
